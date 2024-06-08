@@ -1,0 +1,118 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: {{ .namespace }}
+  name: ksrp-role
+rules:
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "update", "create", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ksrp-role-binding
+  namespace: {{ .namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ksrp-role
+subjects:
+  - kind: ServiceAccount
+    name: {{ .saName }}
+    namespace: {{ .namespace }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .saName }}
+  namespace: {{ .namespace }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ .appName }}
+  name: {{ .appName }}
+  namespace: {{ .namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .appName }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: {{ .appName }}
+    spec:
+      containers:
+        - image: {{ .image }}
+          args: ["-ns={{ .namespace }}", "-app={{ .appName }}", "-debug={{ .debug }}"]
+          imagePullPolicy: Always
+          name: {{ .appName }}
+          ports:
+            - containerPort: {{ .service.linkPort }}
+              name: link-port
+              protocol: TCP
+            - containerPort: {{ .service.apiPort }}
+              name: api-port
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /-/healthz
+              port: api-port
+              scheme: HTTP
+            initialDelaySeconds: 3
+            periodSeconds: 30
+            successThreshold: 1
+            timeoutSeconds: 5
+          resources:
+            limits:
+              cpu: '1'
+              memory: 100Mi
+            requests:
+              cpu: '500m'
+              memory: 32Mi
+      serviceAccount: {{ .saName }}
+      serviceAccountName: {{ .saName }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .service.name }}
+  namespace: {{ .namespace }}
+spec:
+  sessionAffinity: None
+  selector:
+    app: {{ .appName }}
+{{- if .service.nodePort }}
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ports:
+    - name: link-port
+      port: {{ .service.linkPort }}
+      protocol: TCP
+      targetPort: {{ .service.linkPort }}
+      nodePort: {{ .service.nodePort.link }}
+    - name: api-port
+      port: {{ .service.apiPort }}
+      protocol: TCP
+      targetPort: {{ .service.apiPort }}
+      nodePort: {{ .service.nodePort.api }}
+  type: NodePort
+{{- else }}
+  ports:
+    - port: {{ .service.linkPort }}
+      protocol: TCP
+      targetPort: {{ .service.linkPort }}
+    - port: {{ .service.apiPort }}
+      protocol: TCP
+      targetPort: {{ .service.apiPort }}
+  type: ClusterIP
+{{- end }}

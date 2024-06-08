@@ -1,0 +1,10 @@
+defaultBaseImage: 'ccr.ccs.tencentyun.com/gcrs/distroless:latest'
+builds:
+  - id: ksrp-expose
+    dir: ./cmd/ksrp-expose
+    flags:
+      - -trimpath
+  - id: ksrp-agent
+    dir: ./cmd/ksrp-agent
+    flags:
+      - -trimpath

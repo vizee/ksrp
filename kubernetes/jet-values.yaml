@@ -1,0 +1,12 @@
+namespace: default
+saName: ksrp-expose
+appName: ksrp-expose
+image: ccr.ccs.tencentyun.com/vizee/ksrp-expose:latest
+debug: 'false'
+service:
+  name: ksrp-expose
+  linkPort: 5777
+  apiPort: 5780
+  nodePort:
+    link: 31777
+    api: 31780

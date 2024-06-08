@@ -1,0 +1,107 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: ksrp-role
+rules:
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "update", "create", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ksrp-role-binding
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ksrp-role
+subjects:
+  - kind: ServiceAccount
+    name: ksrp-expose
+    namespace: default
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ksrp-expose
+  namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ksrp-expose
+  name: ksrp-expose
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ksrp-expose
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: ksrp-expose
+    spec:
+      containers:
+        - image: ccr.ccs.tencentyun.com/vizee/ksrp-expose:latest
+          args: ["-ns=default", "-app=ksrp-expose", "-debug=false"]
+          imagePullPolicy: Always
+          name: ksrp-expose
+          ports:
+            - containerPort: 5777
+              name: link-port
+              protocol: TCP
+            - containerPort: 5780
+              name: api-port
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /-/healthz
+              port: api-port
+              scheme: HTTP
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            successThreshold: 1
+            timeoutSeconds: 5
+          resources:
+            limits:
+              cpu: '1'
+              memory: 100Mi
+            requests:
+              cpu: '500m'
+              memory: 32Mi
+      serviceAccount: ksrp-expose
+      serviceAccountName: ksrp-expose
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ksrp-expose
+  namespace: default
+spec:
+  sessionAffinity: None
+  selector:
+    app: ksrp-expose
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ports:
+    - name: link-port
+      port: 5777
+      protocol: TCP
+      targetPort: 5777
+      nodePort: 31777
+    - name: api-port
+      port: 5780
+      protocol: TCP
+      targetPort: 5780
+      nodePort: 31780
+  type: NodePort
