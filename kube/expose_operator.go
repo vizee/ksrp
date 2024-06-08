@@ -129,8 +129,9 @@ func (o *ExposeOperator) RestoreService(ctx context.Context, serviceName string)
 	delete(annotations, hijackAnnotation)
 	obj.SetAnnotations(annotations)
 
-	unstructured.SetNestedField(obj.Object, defaultSpec["selector"], "spec", "selector")
-	unstructured.SetNestedField(obj.Object, defaultSpec["ports"], "spec", "ports")
+	for key, value := range defaultSpec {
+		unstructured.SetNestedField(obj.Object, value, "spec", key)
+	}
 
 	_, err = o.kc.Update(ctx, obj)
 	return err
