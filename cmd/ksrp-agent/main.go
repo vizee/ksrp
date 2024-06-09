@@ -20,6 +20,7 @@ const (
 
 var (
 	apiAddress  string = os.Getenv("KSRP_API")
+	apiKey      string = os.Getenv("KSRP_APIKEY")
 	linkAddress string = os.Getenv("KSRP_LINK")
 )
 
@@ -87,6 +88,7 @@ func main() {
 			config, err := loadConfigFromFile()
 			if err == nil {
 				apiAddress = cmp.Or(apiAddress, config["api"])
+				apiKey = cmp.Or(linkAddress, config["api_key"])
 				linkAddress = cmp.Or(linkAddress, config["link"])
 			} else if !os.IsNotExist(err) {
 				slog.Warn("load config", "err", err)

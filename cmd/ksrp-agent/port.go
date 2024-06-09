@@ -11,10 +11,9 @@ import (
 )
 
 func getPort(port string) ([]string, error) {
-	params := url.Values{
+	resp, err := http.Get(getAPIUrl("/expose/port", url.Values{
 		"port": []string{port},
-	}
-	resp, err := http.Get(apiAddress + "/expose/port?" + params.Encode())
+	}))
 	if err != nil {
 		return nil, err
 	}

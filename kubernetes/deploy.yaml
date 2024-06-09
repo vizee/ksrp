@@ -28,6 +28,20 @@ metadata:
   name: ksrp-expose
   namespace: default
 ---
+apiVersion: v1
+data:
+  expose.yaml: |-
+    link: ':5777'
+    api: ':5780'
+    apiKey: 'abcd'
+    namespace: 'default'
+    appName: 'ksrp-expose'
+    logLevel: 'info'
+kind: ConfigMap
+metadata:
+  name: ksrp-expose-cm
+  namespace: default
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -52,7 +66,6 @@ spec:
     spec:
       containers:
         - image: ccr.ccs.tencentyun.com/vizee/ksrp-expose:latest
-          args: ["-ns=default", "-app=ksrp-expose", "-debug=false"]
           imagePullPolicy: Always
           name: ksrp-expose
           ports:
@@ -68,7 +81,7 @@ spec:
               path: /-/healthz
               port: api-port
               scheme: HTTP
-            initialDelaySeconds: 15
+            initialDelaySeconds: 3
             periodSeconds: 30
             successThreshold: 1
             timeoutSeconds: 5
@@ -79,8 +92,16 @@ spec:
             requests:
               cpu: '500m'
               memory: 32Mi
+          volumeMounts:
+            - mountPath: /config
+              name: config-vol
       serviceAccount: ksrp-expose
       serviceAccountName: ksrp-expose
+      volumes:
+        - configMap:
+            defaultMode: 420
+            name: ksrp-expose-cm
+          name: config-vol
 ---
 apiVersion: v1
 kind: Service

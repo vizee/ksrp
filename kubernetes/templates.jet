@@ -28,6 +28,20 @@ metadata:
   name: {{ .saName }}
   namespace: {{ .namespace }}
 ---
+apiVersion: v1
+data:
+  expose.yaml: |-
+    link: ':{{ .service.linkPort }}'
+    api: ':{{ .service.apiPort }}'
+    apiKey: '{{ .apiKey }}'
+    namespace: '{{ .namespace }}'
+    appName: '{{ .appName }}'
+    logLevel: '{{ .logLevel }}'
+kind: ConfigMap
+metadata:
+  name: {{ .appName }}-cm
+  namespace: {{ .namespace }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -52,7 +66,6 @@ spec:
     spec:
       containers:
         - image: {{ .image }}
-          args: ["-ns={{ .namespace }}", "-app={{ .appName }}", "-debug={{ .debug }}"]
           imagePullPolicy: Always
           name: {{ .appName }}
           ports:
@@ -79,8 +92,16 @@ spec:
             requests:
               cpu: '500m'
               memory: 32Mi
+          volumeMounts:
+            - mountPath: /config
+              name: config-vol
       serviceAccount: {{ .saName }}
       serviceAccountName: {{ .saName }}
+      volumes:
+        - configMap:
+            defaultMode: 420
+            name: {{ .appName }}-cm
+          name: config-vol
 ---
 apiVersion: v1
 kind: Service

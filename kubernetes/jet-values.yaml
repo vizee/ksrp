@@ -2,7 +2,8 @@ namespace: default
 saName: ksrp-expose
 appName: ksrp-expose
 image: ccr.ccs.tencentyun.com/vizee/ksrp-expose:latest
-debug: 'false'
+apiKey: 'abcd'
+logLevel: 'info'
 service:
   name: ksrp-expose
   linkPort: 5777

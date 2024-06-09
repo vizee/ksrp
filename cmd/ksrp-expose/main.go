@@ -1,14 +1,25 @@
 package main
 
 import (
-	"flag"
+	"cmp"
 	"fmt"
 	"log/slog"
 	"net"
 	"os"
 
 	"github.com/vizee/ksrp/kube"
+	"gopkg.in/yaml.v3"
 )
+
+type Config struct {
+	Link      string     `yaml:"link"`
+	API       string     `yaml:"api"`
+	APIKey    string     `yaml:"apiKey"`
+	Namespace string     `yaml:"namespace"`
+	AppName   string     `yaml:"appName"`
+	LogLevel  slog.Level `yaml:"logLevel"`
+	NoHijack  bool       `yaml:"noHijack"`
+}
 
 const (
 	operatorName = "ksrp-expose"
@@ -27,45 +38,47 @@ func fatal(args ...any) {
 	os.Exit(1)
 }
 
-func main() {
-	var (
-		linkAddr  string
-		apiAddr   string
-		namespace string
-		appName   string
-		debug     bool
-	)
-	flag.StringVar(&linkAddr, "link", ":5777", "listen link")
-	flag.StringVar(&apiAddr, "api", ":5780", "listen api")
-	flag.StringVar(&namespace, "ns", "default", "kubernetes namespace")
-	flag.StringVar(&appName, "app", "ksrp-expose", "kubernetes app label")
-	flag.BoolVar(&debug, "debug", false, "debug log")
-	flag.Parse()
+func loadConfig(fname string) (*Config, error) {
+	data, err := os.ReadFile(fname)
+	if err != nil {
+		return nil, err
+	}
+	var config Config
+	err = yaml.Unmarshal(data, &config)
+	if err != nil {
+		return nil, err
+	}
+	return &config, nil
+}
 
-	if debug {
-		slog.SetLogLoggerLevel(slog.LevelDebug)
+func main() {
+	conf, err := loadConfig(cmp.Or(os.Getenv("EXPOSE_CONFIG"), "config/expose.yaml"))
+	if err != nil {
+		fatal("load config", err)
 	}
 
+	slog.SetLogLoggerLevel(conf.LogLevel)
+
 	var operator *kube.ExposeOperator
-	if os.Getenv("NO_HIJACK") != "1" {
+	if !conf.NoHijack {
 		var err error
-		operator, err = loadExposeOperator(namespace)
+		operator, err = loadExposeOperator(conf.Namespace)
 		if err != nil {
 			fatal(err)
 		}
 	}
 
-	server := newServer(appName, operator)
+	server := newServer(conf.AppName, operator)
 
-	slog.Info("listen link", "address", linkAddr)
+	slog.Info("listen link", "address", conf.Link)
 
-	ln, err := net.Listen("tcp", linkAddr)
+	ln, err := net.Listen("tcp", conf.Link)
 	if err != nil {
 		fatal("listen link", err)
 	}
 	go server.serveAgent(ln)
 
-	err = serveAPI(server, apiAddr)
+	err = serveAPI(server, conf.API, conf.APIKey)
 	if err != nil {
 		slog.Error("serve api", "err", err)
 	}

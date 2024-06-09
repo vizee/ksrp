@@ -9,10 +9,23 @@ import (
 )
 
 type apiServer struct {
-	inner *Server
+	inner  *Server
+	apiKey string
+}
+
+func (s *apiServer) checkAuth(w http.ResponseWriter, r *http.Request) bool {
+	if s.apiKey != "" && r.FormValue("key") != s.apiKey {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return false
+	}
+	return true
 }
 
 func (s *apiServer) postListen(w http.ResponseWriter, r *http.Request) {
+	if !s.checkAuth(w, r) {
+		return
+	}
+
 	service := r.FormValue("service")
 	port, _ := strconv.Atoi(r.FormValue("port"))
 	if port <= 0 {
@@ -49,6 +62,10 @@ func (s *apiServer) postListen(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *apiServer) postRevoke(w http.ResponseWriter, r *http.Request) {
+	if !s.checkAuth(w, r) {
+		return
+	}
+
 	err := s.inner.revokeToken(r.Context(), r.FormValue("token"), true)
 	if err != nil {
 		slog.Warn("revoke token", "err", err)
@@ -59,6 +76,10 @@ func (s *apiServer) postRevoke(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *apiServer) getPort(w http.ResponseWriter, r *http.Request) {
+	if !s.checkAuth(w, r) {
+		return
+	}
+
 	port, _ := strconv.Atoi(r.FormValue("port"))
 	svc := s.inner.getPort(port)
 	if svc == nil {
@@ -72,8 +93,11 @@ func (s *apiServer) getHealthz(w http.ResponseWriter, _ *http.Request) {
 	w.Write([]byte("ok"))
 }
 
-func serveAPI(server *Server, address string) error {
-	api := &apiServer{inner: server}
+func serveAPI(server *Server, address string, apiKey string) error {
+	api := &apiServer{
+		inner:  server,
+		apiKey: apiKey,
+	}
 	http.HandleFunc("POST /expose/listen", api.postListen)
 	http.HandleFunc("POST /expose/revoke", api.postRevoke)
 	http.HandleFunc("GET /expose/port", api.getPort)

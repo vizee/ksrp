@@ -11,7 +11,7 @@ import (
 )
 
 func postRevoke(token string) (string, error) {
-	resp, err := http.PostForm(apiAddress+"/expose/revoke", url.Values{
+	resp, err := http.PostForm(getAPIUrl("/expose/revoke", nil), url.Values{
 		"token": []string{token},
 	})
 	if err != nil {

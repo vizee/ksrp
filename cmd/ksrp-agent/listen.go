@@ -10,8 +10,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func getAPIUrl(path string, values url.Values) string {
+	if apiKey != "" {
+		if values == nil {
+			values = make(url.Values)
+		}
+		values.Set("key", apiKey)
+	}
+	if len(values) != 0 {
+		return apiAddress + path + "?" + values.Encode()
+	} else {
+		return apiAddress + path
+	}
+}
+
 func postListen(port string, service string) (string, error) {
-	resp, err := http.PostForm(apiAddress+"/expose/listen", url.Values{
+	resp, err := http.PostForm(getAPIUrl("/expose/listen", nil), url.Values{
 		"service": []string{service},
 		"port":    []string{port},
 	})
