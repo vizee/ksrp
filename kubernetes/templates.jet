@@ -129,10 +129,12 @@ spec:
   type: NodePort
 {{- else }}
   ports:
-    - port: {{ .service.linkPort }}
+    - name: link-port
+      port: {{ .service.linkPort }}
       protocol: TCP
       targetPort: {{ .service.linkPort }}
-    - port: {{ .service.apiPort }}
+    - name: api-port
+      port: {{ .service.apiPort }}
       protocol: TCP
       targetPort: {{ .service.apiPort }}
   type: ClusterIP

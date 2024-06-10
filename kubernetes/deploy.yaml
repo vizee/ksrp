@@ -112,17 +112,13 @@ spec:
   sessionAffinity: None
   selector:
     app: ksrp-expose
-  externalTrafficPolicy: Cluster
-  internalTrafficPolicy: Cluster
   ports:
     - name: link-port
       port: 5777
       protocol: TCP
       targetPort: 5777
-      nodePort: 31777
     - name: api-port
       port: 5780
       protocol: TCP
       targetPort: 5780
-      nodePort: 31780
-  type: NodePort
+  type: ClusterIP
