@@ -84,6 +84,8 @@ github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcU
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/vizee/mstp v0.0.0-20240608130529-62a47bbcf963 h1:nOmJZuNl5rqRC/3iVC3D2G+Tdg0PG76ii7Y1G34dfRs=
 github.com/vizee/mstp v0.0.0-20240608130529-62a47bbcf963/go.mod h1:qre28AFiE5Ds3GqkNLLgxItzlcGy6tVT3nhMFT84JPI=
+github.com/vizee/mstp v0.0.0-20240611114254-3432b4cd4ce2 h1:o1wzllRGRjPVEeOilHEv2uWG6VMCHdYWQPJLNz0Yt38=
+github.com/vizee/mstp v0.0.0-20240611114254-3432b4cd4ce2/go.mod h1:qre28AFiE5Ds3GqkNLLgxItzlcGy6tVT3nhMFT84JPI=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=

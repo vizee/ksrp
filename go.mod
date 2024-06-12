@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/spf13/cobra v1.8.0
-	github.com/vizee/mstp v0.0.0-20240608130529-62a47bbcf963
+	github.com/vizee/mstp v0.0.0-20240611114254-3432b4cd4ce2
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apimachinery v0.30.1
 	k8s.io/client-go v0.30.1
