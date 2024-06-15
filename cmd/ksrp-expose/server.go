@@ -223,23 +223,13 @@ func (s *Server) revokeToken(ctx context.Context, token string, restore bool) er
 func (s *Server) handleAgentConn(conn net.Conn) {
 	defer conn.Close()
 
-	token, err := shakeHandsWithAgent(conn)
-	if err != nil {
+	svc, err := s.shakeHandsWithAgent(conn)
+	if err != nil || svc == nil {
 		slog.Debug("agent shake hands", "conn", conn.RemoteAddr().String(), "err", err)
 		return
 	}
 
-	s.lock.RLock()
-	svc := s.tokens[token]
-	s.lock.RUnlock()
-	if svc == nil {
-		_ = proto.WriteMessage(conn, proto.CmdError, "invalid token", time.Second)
-		slog.Debug("invalid token", "token", token)
-		return
-	}
-
-	_ = proto.WriteMessage(conn, proto.CmdShakeHandsOk, "ok", time.Second)
-	slog.Debug("service add agent connection", "name", svc.name, "conn", conn.RemoteAddr().String(), "token", token)
+	slog.Debug("service add agent connection", "name", svc.name, "conn", conn.RemoteAddr().String())
 
 	msc := mstp.NewConn(conn, true, nil)
 	defer msc.Close()
@@ -251,6 +241,32 @@ func (s *Server) handleAgentConn(conn net.Conn) {
 		slog.Error("agent connection error", "conn", conn.RemoteAddr().String(), "err", err)
 	}
 	svc.removeAgentConn(msc)
+}
+
+func (s *Server) shakeHandsWithAgent(conn net.Conn) (*Service, error) {
+	conn.SetReadDeadline(time.Now().Add(time.Second))
+	cmd, token, err := proto.ReadMessage(conn)
+	conn.SetReadDeadline(time.Time{})
+	if err != nil {
+		return nil, err
+	}
+	if cmd != proto.CmdShakeHands {
+		return nil, errBadShakeHands
+	}
+
+	s.lock.RLock()
+	svc := s.tokens[token]
+	s.lock.RUnlock()
+
+	conn.SetWriteDeadline(time.Now().Add(time.Second))
+	if svc == nil {
+		_ = proto.WriteMessage(conn, proto.CmdError, "invalid token")
+	} else {
+		_ = proto.WriteMessage(conn, proto.CmdShakeHandsOk, "ok")
+	}
+	conn.SetWriteDeadline(time.Time{})
+
+	return svc, nil
 }
 
 func (s *Server) serveAgent(ln net.Listener) {
@@ -275,15 +291,4 @@ func newServer(appName string, operator *kube.ExposeOperator) *Server {
 		ports:    make(map[int]*Service),
 		tokens:   make(map[string]*Service),
 	}
-}
-
-func shakeHandsWithAgent(conn net.Conn) (string, error) {
-	cmd, msg, err := proto.ReadMessage(conn, time.Second)
-	if err != nil {
-		return "", err
-	}
-	if cmd != proto.CmdShakeHands {
-		return "", errBadShakeHands
-	}
-	return msg, nil
 }

@@ -17,11 +17,15 @@ import (
 )
 
 func shakeHandsWithExpose(conn net.Conn, token string) error {
-	err := proto.WriteMessage(conn, proto.CmdShakeHands, token, time.Second)
+	conn.SetWriteDeadline(time.Now().Add(time.Second))
+	err := proto.WriteMessage(conn, proto.CmdShakeHands, token)
+	conn.SetWriteDeadline(time.Time{})
 	if err != nil {
 		return err
 	}
-	cmd, msg, err := proto.ReadMessage(conn, time.Second*5)
+	conn.SetReadDeadline(time.Now().Add(time.Second * 5))
+	cmd, msg, err := proto.ReadMessage(conn)
+	conn.SetReadDeadline(time.Time{})
 	if err != nil {
 		return err
 	}
