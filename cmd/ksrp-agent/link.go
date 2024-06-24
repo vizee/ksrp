@@ -56,7 +56,7 @@ func linkMain(token string, backend string, opts *linkOptions) {
 	}
 
 	backendPool := startLocalPool(backend, opts.backendConns)
-	msc := mstp.NewConn(conn, false, func(s *mstp.Stream) {
+	msc := mstp.NewConn(conn, conn, false, func(s *mstp.Stream) {
 		go func(s *mstp.Stream) {
 			defer s.Close()
 			bc, err := backendPool.get()

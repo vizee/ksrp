@@ -231,7 +231,7 @@ func (s *Server) handleAgentConn(conn net.Conn) {
 
 	slog.Debug("service add agent connection", "name", svc.name, "conn", conn.RemoteAddr().String())
 
-	msc := mstp.NewConn(conn, true, nil)
+	msc := mstp.NewConn(conn, conn, true, nil)
 	defer msc.Close()
 	if !svc.addAgentConn(msc) {
 		return
