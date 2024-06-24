@@ -25,9 +25,10 @@ var (
 )
 
 type ExposeOperator struct {
-	name      string
-	kc        *Client
-	namespace string
+	name        string
+	kc          *Client
+	namespace   string
+	allowCreate bool
 }
 
 func (o *ExposeOperator) newService(serviceName string, appName string, port int) *unstructured.Unstructured {
@@ -66,7 +67,7 @@ func (o *ExposeOperator) newService(serviceName string, appName string, port int
 func (o *ExposeOperator) HijackService(ctx context.Context, serviceName string, appName string, port int) error {
 	obj, err := o.kc.Get(ctx, serviceGVK, o.namespace, serviceName)
 	if err != nil {
-		if !errors.IsNotFound(err) {
+		if !errors.IsNotFound(err) || !o.allowCreate {
 			return err
 		}
 	}
@@ -137,10 +138,11 @@ func (o *ExposeOperator) RestoreService(ctx context.Context, serviceName string)
 	return err
 }
 
-func NewExposeOperator(name string, kc *Client, namespace string) *ExposeOperator {
+func NewExposeOperator(name string, kc *Client, namespace string, allowCreate bool) *ExposeOperator {
 	return &ExposeOperator{
-		name:      name,
-		kc:        kc,
-		namespace: namespace,
+		name:        name,
+		kc:          kc,
+		namespace:   namespace,
+		allowCreate: allowCreate,
 	}
 }
